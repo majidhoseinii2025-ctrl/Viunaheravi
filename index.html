@@ -565,6 +565,10 @@
               <input type="text" id="purDate" class="date-input" readonly placeholder="1403/04/01" onclick="openDatePicker('purDate', event)">
             </div>
             <div class="form-group">
+              <label>تاریخ تسویه حساب (شمسی) - اختیاری</label>
+              <input type="text" id="purSettlementDate" class="date-input" readonly placeholder="1403/05/01" onclick="openDatePicker('purSettlementDate', event)">
+            </div>
+            <div class="form-group">
               <label>تخفیف (تومان)</label>
               <input type="number" id="purDiscount" min="0" value="0" oninput="updatePurchasePreview()">
             </div>
@@ -593,12 +597,13 @@
           <table>
             <thead>
               <tr>
-                <th>تاریخ</th>
+                <th>تاریخ خرید</th>
                 <th>تامین‌کننده</th>
                 <th>ماده</th>
                 <th>مقدار</th>
                 <th>قیمت واحد (ت)</th>
                 <th>جمع (تومان)</th>
+                <th>تسویه‌حساب</th>
                 <th>عملیات</th>
               </tr>
             </thead>
@@ -1102,22 +1107,84 @@
         <div style="background: #E4ECE1; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
           <div class="form-row">
             <div class="form-group">
-              <label>از تاریخ (شمسی)</label>
-              <input type="text" id="repFrom" class="date-input" readonly placeholder="1403/01/01" onclick="openDatePicker('repFrom', event)">
-            </div>
-            <div class="form-group">
-              <label>تا تاریخ (شمسی)</label>
-              <input type="text" id="repTo" class="date-input" readonly placeholder="1403/04/31" onclick="openDatePicker('repTo', event)">
-            </div>
-            <div class="form-group">
-              <label>فیلتر آیتم</label>
-              <select id="repItem">
-                <option value="">همهٔ آیتم‌ها</option>
+              <label>نوع گزارش</label>
+              <select id="reportType" onchange="onReportTypeChange()">
+                <option value="sales">💵 فروش و سود/زیان</option>
+                <option value="inventory">📦 موجودی و خریدها</option>
+                <option value="supplier">🏭 تامین‌کننده‌ها و تسویه حساب</option>
               </select>
             </div>
           </div>
+
+          <!-- Sales Report Options -->
+          <div id="salesReportOptions">
+            <div class="form-row">
+              <div class="form-group">
+                <label>از تاریخ (شمسی)</label>
+                <input type="text" id="repFrom" class="date-input" readonly placeholder="1403/01/01" onclick="openDatePicker('repFrom', event)">
+              </div>
+              <div class="form-group">
+                <label>تا تاریخ (شمسی)</label>
+                <input type="text" id="repTo" class="date-input" readonly placeholder="1403/04/31" onclick="openDatePicker('repTo', event)">
+              </div>
+              <div class="form-group">
+                <label>فیلتر آیتم</label>
+                <select id="repItem">
+                  <option value="">همهٔ آیتم‌ها</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Inventory Report Options -->
+          <div id="inventoryReportOptions" style="display: none;">
+            <div class="form-row">
+              <div class="form-group">
+                <label>از تاریخ خرید (شمسی)</label>
+                <input type="text" id="invRepFrom" class="date-input" readonly placeholder="1403/01/01" onclick="openDatePicker('invRepFrom', event)">
+              </div>
+              <div class="form-group">
+                <label>تا تاریخ خرید (شمسی)</label>
+                <input type="text" id="invRepTo" class="date-input" readonly placeholder="1403/04/31" onclick="openDatePicker('invRepTo', event)">
+              </div>
+              <div class="form-group">
+                <label>فیلتر ماده اولیه</label>
+                <select id="invRepMaterial">
+                  <option value="">همهٔ مواد</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Supplier Report Options -->
+          <div id="supplierReportOptions" style="display: none;">
+            <div class="form-row">
+              <div class="form-group">
+                <label>از تاریخ خرید (شمسی)</label>
+                <input type="text" id="supRepFrom" class="date-input" readonly placeholder="1403/01/01" onclick="openDatePicker('supRepFrom', event)">
+              </div>
+              <div class="form-group">
+                <label>تا تاریخ خرید (شمسی)</label>
+                <input type="text" id="supRepTo" class="date-input" readonly placeholder="1403/04/31" onclick="openDatePicker('supRepTo', event)">
+              </div>
+              <div class="form-group">
+                <label>نام تامین‌کننده</label>
+                <input type="text" id="supRepSupplier" list="supplierListReports" placeholder="همهٔ تامین‌کننده‌ها">
+                <datalist id="supplierListReports"></datalist>
+              </div>
+              <div class="form-group">
+                <label>وضعیت</label>
+                <select id="supRepStatus">
+                  <option value="">همه</option>
+                  <option value="settled">✅ تسویه‌شده</option>
+                  <option value="unsettled">⏳ تسویه‌نشده</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
           <div class="button-group">
-            <button class="btn-primary" onclick="generateReport()" style="flex: 1;">📊 نمایش گزارش</button>
+            <button class="btn-primary" onclick="generateCurrentReport()" style="flex: 1;">📊 نمایش گزارش</button>
             <button class="btn-info" onclick="printReport()" style="flex: 1;">🖨️ چاپ / خروجی PDF</button>
           </div>
           <p style="font-size: 10px; color: #5B4A38; margin-top: 6px;">ℹ️ فیلد تاریخ را خالی بگذار تا آن سمت بازه محدود نشود. فرمت تاریخ: 1403/04/01</p>
@@ -1825,6 +1892,7 @@
       const discount = Number(document.getElementById('purDiscount').value) || 0;
       const paymentMethod = document.getElementById('purPaymentMethod').value;
       const date = document.getElementById('purDate').value.trim() || today();
+      const settlementDate = document.getElementById('purSettlementDate').value.trim() || '';
       const updatePrice = document.getElementById('purUpdatePrice').checked;
 
       if (!materialId || qty <= 0 || unitPrice <= 0) {
@@ -1854,6 +1922,7 @@
           p.paymentMethod = paymentMethod;
           p.total = total;
           p.date = date;
+          p.settlementDate = settlementDate;
           material.stock = (material.stock || 0) + qty;
           if (updatePrice) material.unitPrice = unitPrice;
         }
@@ -1864,7 +1933,7 @@
         purchaseId = uid();
         db.purchases.push({
           id: purchaseId, date, supplier, materialId, materialName: material.name,
-          unit: material.unit, qty, unitPrice, discount, paymentMethod, total
+          unit: material.unit, qty, unitPrice, discount, paymentMethod, total, settlementDate
         });
         material.stock = (material.stock || 0) + qty;
         if (updatePrice) material.unitPrice = unitPrice;
@@ -1888,6 +1957,7 @@
       document.getElementById('purDiscount').value = p.discount || 0;
       document.getElementById('purPaymentMethod').value = p.paymentMethod || '';
       document.getElementById('purDate').value = p.date;
+      document.getElementById('purSettlementDate').value = p.settlementDate || '';
       updatePurchasePreview();
       document.getElementById('purFormTitle').textContent = '✏️ ویرایش خرید';
       document.getElementById('purSaveBtn').textContent = 'ذخیره ویرایش';
@@ -1905,6 +1975,7 @@
       document.getElementById('purDiscount').value = '0';
       document.getElementById('purPaymentMethod').selectedIndex = 0;
       document.getElementById('purDate').value = today();
+      document.getElementById('purSettlementDate').value = '';
       document.getElementById('purUpdatePrice').checked = true;
       document.getElementById('purPreview').style.display = 'none';
       document.getElementById('purFormTitle').textContent = '➕ ثبت خرید جدید';
@@ -3261,6 +3332,30 @@
     }
 
     // ===== Reports =====
+    function onReportTypeChange() {
+      const type = document.getElementById('reportType').value;
+      const salesOpts = document.getElementById('salesReportOptions');
+      const invOpts = document.getElementById('inventoryReportOptions');
+      const supOpts = document.getElementById('supplierReportOptions');
+      
+      if (salesOpts) salesOpts.style.display = type === 'sales' ? 'block' : 'none';
+      if (invOpts) invOpts.style.display = type === 'inventory' ? 'block' : 'none';
+      if (supOpts) supOpts.style.display = type === 'supplier' ? 'block' : 'none';
+      
+      document.getElementById('reportResult').innerHTML = '';
+    }
+
+    function generateCurrentReport() {
+      const type = document.getElementById('reportType').value;
+      if (type === 'sales') {
+        generateReport();
+      } else if (type === 'inventory') {
+        generateInventoryReport();
+      } else if (type === 'supplier') {
+        generateSupplierReport();
+      }
+    }
+
     function generateReport() {
       const from = document.getElementById('repFrom').value.trim();
       const to = document.getElementById('repTo').value.trim();
@@ -3326,6 +3421,335 @@
             </table>
           </div>
         `;
+      }
+
+      document.getElementById('reportResult').innerHTML = html;
+    }
+
+    function generateInventoryReport() {
+      const from = document.getElementById('invRepFrom').value.trim();
+      const to = document.getElementById('invRepTo').value.trim();
+      const materialId = document.getElementById('invRepMaterial').value;
+
+      // فیلتر خریدها بر اساس تاریخ و ماده
+      const filteredPurchases = db.purchases.filter(p => {
+        if (from && p.date < from) return false;
+        if (to && p.date > to) return false;
+        if (materialId && p.materialId !== materialId) return false;
+        return true;
+      });
+
+      // گروه‌بندی خریدها بر اساس ماده
+      const materialStats = {};
+      db.materials.forEach(m => {
+        if (materialId && m.id !== materialId) return; // فیلتر یک ماده خاص
+        materialStats[m.id] = {
+          name: m.name,
+          category: m.category || '—',
+          unit: m.unit,
+          currentStock: m.stock || 0,
+          unitPrice: m.unitPrice || 0,
+          currentValue: (m.stock || 0) * (m.unitPrice || 0),
+          purchases: [],
+          totalQtyPurchased: 0,
+          totalValuePurchased: 0
+        };
+      });
+
+      // اضافه کردن خریدها به آمار مواد
+      filteredPurchases.forEach(p => {
+        if (!materialStats[p.materialId]) {
+          const mat = db.materials.find(m => m.id === p.materialId);
+          if (mat) {
+            materialStats[p.materialId] = {
+              name: mat.name,
+              category: mat.category || '—',
+              unit: mat.unit,
+              currentStock: mat.stock || 0,
+              unitPrice: mat.unitPrice || 0,
+              currentValue: (mat.stock || 0) * (mat.unitPrice || 0),
+              purchases: [],
+              totalQtyPurchased: 0,
+              totalValuePurchased: 0
+            };
+          }
+        }
+        if (materialStats[p.materialId]) {
+          materialStats[p.materialId].purchases.push(p);
+          materialStats[p.materialId].totalQtyPurchased += p.qty || 0;
+          materialStats[p.materialId].totalValuePurchased += p.total || 0;
+        }
+      });
+
+      const materials = Object.values(materialStats);
+      
+      // محاسبه جمع کل
+      const summaryStats = {
+        totalMaterials: materials.length,
+        totalCurrentStock: materials.reduce((s, m) => s + m.currentStock, 0),
+        totalCurrentValue: materials.reduce((s, m) => s + m.currentValue, 0),
+        totalPurchasesQty: materials.reduce((s, m) => s + m.totalQtyPurchased, 0),
+        totalPurchasesValue: materials.reduce((s, m) => s + m.totalValuePurchased, 0)
+      };
+
+      let html = `
+        <div style="margin-bottom: 16px;">
+          <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 12px;">📊 خلاصهٔ موجودی</h3>
+          <div class="card-grid">
+            <div class="stat-box" style="background: #E1E4FF;">
+              <p>تعداد مواد</p>
+              <p style="color: #5B5B8F;">${faDigits(summaryStats.totalMaterials)}</p>
+            </div>
+            <div class="stat-box" style="background: #E4ECE1;">
+              <p>موجودی کل (تعداد)</p>
+              <p style="color: #4F7A56;">${faDigits(summaryStats.totalCurrentStock)}</p>
+            </div>
+            <div class="stat-box" style="background: #FBF3E7;">
+              <p>ارزش موجودی کل</p>
+              <p style="color: #8F5622; font-family: monospace;">${toman(summaryStats.totalCurrentValue)} ت</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      if (from || to) {
+        html += `
+          <div style="margin-bottom: 16px;">
+            <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 12px;">🧾 خریدهای بازهٔ انتخابی</h3>
+            <div class="card-grid">
+              <div class="stat-box" style="background: #E1E4FF;">
+                <p>مقدار خریداری</p>
+                <p style="color: #5B5B8F;">${faDigits(summaryStats.totalPurchasesQty)}</p>
+              </div>
+              <div class="stat-box" style="background: #FBF3E7;">
+                <p>ارزش خریدها</p>
+                <p style="color: #8F5622; font-family: monospace;">${toman(summaryStats.totalPurchasesValue)} ت</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      if (materials.length === 0) {
+        html += '<div class="empty-state"><p>مادهٔ اولیه‌ای با این فیلترها پیدا نشد.</p></div>';
+      } else {
+        materials.forEach(mat => {
+          html += `
+            <div class="card" style="margin-bottom: 16px; background: #FBF8F0; border: 1px solid #CDBE9C;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                <div>
+                  <h4 style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">${mat.name}</h4>
+                  <span class="badge" style="margin-bottom: 8px;">${mat.category}</span>
+                </div>
+                <div style="text-align: left;">
+                  <p style="font-size: 11px; color: #5B4A38; margin-bottom: 4px;"><b>موجودی فعلی:</b></p>
+                  <p style="font-size: 13px; font-weight: bold; color: #4F7A56; font-family: monospace;">${faDigits(mat.currentStock)} ${mat.unit}</p>
+                  <p style="font-size: 11px; color: #8F5622; font-family: monospace; margin-top: 4px;">ارزش: ${toman(mat.currentValue)} ت</p>
+                </div>
+              </div>
+          `;
+
+          if (mat.purchases.length === 0) {
+            html += `<p style="font-size: 11px; color: #8F7A63; padding: 8px; background: #fff; border-radius: 4px;">هیچ خریدی در این بازه ثبت نشده است.</p>`;
+          } else {
+            html += `
+              <div class="table-container" style="margin-top: 10px;">
+                <table style="font-size: 11px;">
+                  <thead>
+                    <tr style="background: #E4D9C4;">
+                      <th>تاریخ</th>
+                      <th>تامین‌کننده</th>
+                      <th>مقدار</th>
+                      <th>قیمت هر واحد</th>
+                      <th>مجموع (تومان)</th>
+                      <th>تخفیف</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${mat.purchases.map(p => `
+                      <tr>
+                        <td>${p.date}</td>
+                        <td>${p.supplier || '—'}</td>
+                        <td>${faDigits(p.qty)}</td>
+                        <td style="font-family: monospace;">${toman(p.unitPrice)}</td>
+                        <td style="font-family: monospace; font-weight: bold; color: #8F5622;">${toman(p.total)}</td>
+                        <td style="font-family: monospace; color: ${p.discount ? '#A24238' : '#5B4A38'};"><b>${p.discount ? toman(p.discount) : '—'}</b></td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+              <div style="margin-top: 10px; padding: 8px; background: #E4ECE1; border-radius: 4px; display: flex; justify-content: space-between;">
+                <span style="font-size: 11px; font-weight: bold;">جمع این ماده:</span>
+                <span style="font-size: 11px; font-weight: bold; font-family: monospace; color: #4F7A56;">${faDigits(mat.totalQtyPurchased)} — ${toman(mat.totalValuePurchased)} ت</span>
+              </div>
+            `;
+          }
+
+          html += `</div>`;
+        });
+      }
+
+      document.getElementById('reportResult').innerHTML = html;
+    }
+
+    function generateSupplierReport() {
+      const from = document.getElementById('supRepFrom').value.trim();
+      const to = document.getElementById('supRepTo').value.trim();
+      const supplierName = document.getElementById('supRepSupplier').value.trim().toLowerCase();
+      const statusFilter = document.getElementById('supRepStatus').value;
+
+      // فیلتر خریدها
+      const filteredPurchases = db.purchases.filter(p => {
+        if (from && p.date < from) return false;
+        if (to && p.date > to) return false;
+        if (supplierName && (!p.supplier || p.supplier.toLowerCase() !== supplierName)) return false;
+        return true;
+      });
+
+      // گروه‌بندی بر اساس تامین‌کننده
+      const supplierStats = {};
+      filteredPurchases.forEach(p => {
+        const sup = p.supplier || 'بدون تامین‌کننده';
+        if (!supplierStats[sup]) {
+          supplierStats[sup] = {
+            name: sup,
+            purchases: [],
+            totalAmount: 0,
+            settledAmount: 0,
+            unsettledAmount: 0,
+            lastDate: p.date
+          };
+        }
+        supplierStats[sup].purchases.push(p);
+        supplierStats[sup].totalAmount += p.total || 0;
+        
+        const isUnsettled = p.settlementDate && p.settlementDate > today();
+        if (isUnsettled) {
+          supplierStats[sup].unsettledAmount += p.total || 0;
+        } else {
+          supplierStats[sup].settledAmount += p.total || 0;
+        }
+        
+        if (p.date > supplierStats[sup].lastDate) {
+          supplierStats[sup].lastDate = p.date;
+        }
+      });
+
+      // فیلتر بر اساس وضعیت
+      let suppliers = Object.values(supplierStats);
+      if (statusFilter === 'settled') {
+        suppliers = suppliers.filter(s => s.unsettledAmount === 0);
+      } else if (statusFilter === 'unsettled') {
+        suppliers = suppliers.filter(s => s.unsettledAmount > 0);
+      }
+
+      // محاسبه جمع کل
+      const summaryStats = {
+        totalSuppliers: suppliers.length,
+        totalAmount: suppliers.reduce((s, sup) => s + sup.totalAmount, 0),
+        totalSettled: suppliers.reduce((s, sup) => s + sup.settledAmount, 0),
+        totalUnsettled: suppliers.reduce((s, sup) => s + sup.unsettledAmount, 0),
+        totalPurchases: suppliers.reduce((s, sup) => s + sup.purchases.length, 0)
+      };
+
+      let html = `
+        <div style="margin-bottom: 16px;">
+          <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 12px;">📊 خلاصهٔ تامین‌کننده‌ها</h3>
+          <div class="card-grid">
+            <div class="stat-box" style="background: #E1E4FF;">
+              <p>تعداد تامین‌کننده</p>
+              <p style="color: #5B5B8F;">${faDigits(summaryStats.totalSuppliers)}</p>
+            </div>
+            <div class="stat-box" style="background: #E1E4FF;">
+              <p>تعداد خریدها</p>
+              <p style="color: #5B5B8F;">${faDigits(summaryStats.totalPurchases)}</p>
+            </div>
+            <div class="stat-box" style="background: #FBF3E7;">
+              <p>کل خریدها</p>
+              <p style="color: #8F5622; font-family: monospace;">${toman(summaryStats.totalAmount)} ت</p>
+            </div>
+            <div class="stat-box" style="background: #E4ECE1;">
+              <p>تسویه‌شده</p>
+              <p style="color: #4F7A56; font-family: monospace;">${toman(summaryStats.totalSettled)} ت</p>
+            </div>
+            <div class="stat-box" style="background: #F1E1DE;">
+              <p>تسویه‌نشده</p>
+              <p style="color: #A24238; font-family: monospace;">${toman(summaryStats.totalUnsettled)} ت</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      if (suppliers.length === 0) {
+        html += '<div class="empty-state"><p>تامین‌کننده‌ای با این فیلترها پیدا نشد.</p></div>';
+      } else {
+        suppliers.forEach(sup => {
+          const unsettledPercent = sup.totalAmount > 0 ? Math.round((sup.unsettledAmount / sup.totalAmount) * 100) : 0;
+          
+          html += `
+            <div class="card" style="margin-bottom: 16px; background: #FBF8F0; border: 1px solid #CDBE9C; border-right: 4px solid ${sup.unsettledAmount > 0 ? '#A24238' : '#4F7A56'};">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                <div>
+                  <h4 style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">🏭 ${sup.name}</h4>
+                  <p style="font-size: 10px; color: #8F7A63; margin: 0;">آخرین خرید: ${sup.lastDate}</p>
+                </div>
+                <div style="text-align: left;">
+                  <p style="font-size: 11px; color: #5B4A38; margin-bottom: 4px;"><b>وضعیت:</b></p>
+                  <p style="font-size: 12px; font-weight: bold; ${sup.unsettledAmount > 0 ? 'color: #A24238;' : 'color: #4F7A56;'}">${sup.unsettledAmount > 0 ? '⏳ تسویه‌نشده (' + faDigits(unsettledPercent) + '%)' : '✅ تسویه‌شده'}</p>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px;">
+                <div style="background: #E1E4FF; padding: 8px; border-radius: 4px; text-align: center;">
+                  <p style="font-size: 10px; color: #5B4A38; margin: 0;">تعداد خریدها</p>
+                  <p style="font-size: 13px; font-weight: bold; color: #5B5B8F; margin: 0;">${faDigits(sup.purchases.length)}</p>
+                </div>
+                <div style="background: #E4ECE1; padding: 8px; border-radius: 4px; text-align: center;">
+                  <p style="font-size: 10px; color: #5B4A38; margin: 0;">تسویه‌شده</p>
+                  <p style="font-size: 12px; font-weight: bold; color: #4F7A56; font-family: monospace; margin: 0;">${toman(sup.settledAmount)}</p>
+                </div>
+                <div style="background: ${sup.unsettledAmount > 0 ? '#F1E1DE' : '#E4ECE1'}; padding: 8px; border-radius: 4px; text-align: center;">
+                  <p style="font-size: 10px; color: #5B4A38; margin: 0;">تسویه‌نشده</p>
+                  <p style="font-size: 12px; font-weight: bold; ${sup.unsettledAmount > 0 ? 'color: #A24238;' : 'color: #4F7A56;'} font-family: monospace; margin: 0;">${toman(sup.unsettledAmount)}</p>
+                </div>
+              </div>
+
+              <div class="table-container" style="margin-top: 10px;">
+                <table style="font-size: 11px;">
+                  <thead>
+                    <tr style="background: #E4D9C4;">
+                      <th>تاریخ</th>
+                      <th>ماده</th>
+                      <th>مقدار</th>
+                      <th>مجموع (ت)</th>
+                      <th>تسویه‌حساب</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${sup.purchases.map(p => {
+                      const isUnsettled = p.settlementDate && p.settlementDate > today();
+                      return `
+                      <tr style="background: ${isUnsettled ? '#FFF5F5' : 'inherit'};">
+                        <td>${p.date}</td>
+                        <td>${p.materialName}</td>
+                        <td>${faDigits(p.qty)} ${p.unit}</td>
+                        <td style="font-family: monospace; font-weight: bold; color: #8F5622;">${toman(p.total)}</td>
+                        <td style="font-weight: bold; ${isUnsettled ? 'color: #A24238;' : 'color: #4F7A56;'}">${p.settlementDate ? p.settlementDate : '✅'}</td>
+                      </tr>
+                    `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+
+              <div style="margin-top: 10px; padding: 8px; background: #E4ECE1; border-radius: 4px; display: flex; justify-content: space-between;">
+                <span style="font-size: 11px; font-weight: bold;">جمع تامین‌کننده:</span>
+                <span style="font-size: 11px; font-weight: bold; font-family: monospace; color: #8F5622;">${toman(sup.totalAmount)} ت</span>
+              </div>
+            </div>
+          `;
+        });
       }
 
       document.getElementById('reportResult').innerHTML = html;
@@ -3447,6 +3871,13 @@
         supplierListEl.innerHTML = suppliers.map(s => `<option value="${s}"></option>`).join('');
       }
 
+      // Supplier list for reports
+      const supplierListReportsEl = document.getElementById('supplierListReports');
+      if (supplierListReportsEl) {
+        const suppliers = [...new Set(db.purchases.map(p => p.supplier).filter(Boolean))];
+        supplierListReportsEl.innerHTML = suppliers.map(s => `<option value="${s}"></option>`).join('');
+      }
+
       // Payment method (cashbox) dropdowns
       ['invPaymentMethod', 'purPaymentMethod'].forEach(selId => {
         const sel = document.getElementById(selId);
@@ -3461,18 +3892,20 @@
       const purchasesListEl = document.getElementById('purchasesList');
       if (purchasesListEl) {
         if (db.purchases.length === 0) {
-          purchasesListEl.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">هنوز خریدی ثبت نشده است.</td></tr>';
+          purchasesListEl.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">هنوز خریدی ثبت نشده است.</td></tr>';
         } else {
           purchasesListEl.innerHTML = db.purchases.slice().reverse().map(p => {
             const pm = p.paymentMethod ? (db.cashboxes.find(c => c.id === p.paymentMethod) || {}).name : '';
+            const isUnsettled = p.settlementDate && p.settlementDate > today();
             return `
-            <tr>
+            <tr style="background: ${isUnsettled ? '#FFF5F5' : 'inherit'};">
               <td>${p.date}</td>
               <td>${p.supplier || '—'}</td>
               <td>${p.materialName}</td>
               <td>${faDigits(p.qty)} ${p.unit}</td>
               <td style="font-family: monospace;">${toman(p.unitPrice)}</td>
               <td style="font-family: monospace; font-weight: bold; color: #8F5622;">${toman(p.total)}${p.discount ? ` <span style="font-size:9px;color:#5B4A38;">(تخفیف ${toman(p.discount)})</span>` : ''}${pm ? `<br><span style="font-size:9px;color:#5B4A38;">${pm}</span>` : ''}</td>
+              <td style="font-size: 11px; ${isUnsettled ? 'color: #A24238; font-weight: bold;' : 'color: #4F7A56;'}">${p.settlementDate ? p.settlementDate : '✅ تسویه شده'}</td>
               <td>
                 <div class="row-actions">
                   <button class="btn-info btn-small" onclick="startEditPurchase('${p.id}')">ویرایش</button>
@@ -3568,6 +4001,15 @@
         repItemSelect.innerHTML = '<option value="">همهٔ آیتم‌ها</option>' +
           db.items.map(it => `<option value="${it.id}">${it.name}</option>`).join('');
         repItemSelect.value = prevRepVal;
+      }
+
+      // Inventory report material dropdown
+      const invRepMatSelect = document.getElementById('invRepMaterial');
+      if (invRepMatSelect) {
+        const prevInvRepMat = invRepMatSelect.value;
+        invRepMatSelect.innerHTML = '<option value="">همهٔ مواد</option>' +
+          db.materials.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+        invRepMatSelect.value = prevInvRepMat;
       }
 
       // Invoices list
