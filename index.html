@@ -10,6 +10,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
@@ -1155,6 +1156,30 @@
           </div>
           <p style="font-size: 10px; color: #5B4A38; margin-top: 6px;">ℹ️ تا این تعداد آیتم در روز برای هر پرسنل رایگان محسوب می‌شود. هر مقدار مازاد بر این سهمیه به‌عنوان بدهی ثبت می‌شود و در بخش «حقوق و دستمزد» قابل کسر از حقوق آن پرسنل است.</p>
         </div>
+
+        <div style="background: #FBF3E7; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #C9A876;">
+          <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 8px;">🔗 اتصال به گوگل درایو</h3>
+          <p style="font-size: 11px; color: #5B4A38; margin-bottom: 10px;">برای فعال‌سازی، ابتدا باید از Google Cloud Console یک «Client ID» بسازی (این آدرس باید دقیقاً همون آدرسی باشه که این صفحه رو ازش باز می‌کنی، مثل آدرس GitHub Pages) و اینجا وارد کنی.</p>
+          <div class="form-row">
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label>Google Client ID</label>
+              <input type="text" id="setGoogleClientId" placeholder="مثل: 123456789-abc.apps.googleusercontent.com">
+            </div>
+          </div>
+          <div class="button-group" style="margin-bottom: 10px;">
+            <button class="btn-secondary" onclick="saveGoogleClientId()">💾 ذخیره Client ID</button>
+          </div>
+          <p id="googleAuthStatus" style="font-size: 12px; font-weight: bold; margin-bottom: 8px;">Client ID را وارد و ذخیره کن.</p>
+          <div class="button-group" style="margin-bottom: 10px;">
+            <button class="btn-primary" id="googleSignInBtn" onclick="signInWithGoogle()" disabled>🔐 ورود با جیمیل</button>
+            <button class="btn-secondary" id="googleSignOutBtn" onclick="signOutGoogle()" style="display: none;">خروج از حساب</button>
+          </div>
+          <div class="button-group">
+            <button class="btn-success" id="driveUploadBtn" onclick="uploadDbToDrive()" disabled style="flex:1;">⬆️ آپلود اطلاعات در درایو</button>
+            <button class="btn-info" id="driveDownloadBtn" onclick="downloadDbFromDrive()" disabled style="flex:1;">⬇️ دریافت اطلاعات از درایو</button>
+          </div>
+          <p style="font-size: 10px; color: #5B4A38; margin-top: 6px;">ℹ️ این اطلاعات در یک فایل اختصاصی به نام «hesab-cafe-data.json» در گوگل درایو خودت ذخیره می‌شود. این برنامه فقط به همین یک فایل دسترسی دارد، نه کل درایوت.</p>
+        </div>
       </div>
     </div>
 
@@ -1620,6 +1645,7 @@
           if (db.settings.shopPhone === undefined) db.settings.shopPhone = '';
           if (db.settings.shopNumber === undefined) db.settings.shopNumber = '';
           if (db.settings.staffFreeItemsPerDay === undefined) db.settings.staffFreeItemsPerDay = 1;
+          if (db.settings.googleClientId === undefined) db.settings.googleClientId = '';
         }
       } catch (e) {
         console.error('Load error:', e);
@@ -1636,9 +1662,19 @@
       document.getElementById('setShopPhone').value = db.settings.shopPhone || '';
       document.getElementById('setShopNumber').value = db.settings.shopNumber || '';
       document.getElementById('setStaffFreeQty').value = db.settings.staffFreeItemsPerDay ?? 1;
+      document.getElementById('setGoogleClientId').value = db.settings.googleClientId || '';
       addInvoiceRow();
       applyTabOrder();
       render();
+      waitForGoogleLibAndInit();
+    }
+
+    function waitForGoogleLibAndInit(attemptsLeft = 20) {
+      if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+        initGoogleAuth();
+      } else if (attemptsLeft > 0) {
+        setTimeout(() => waitForGoogleLibAndInit(attemptsLeft - 1), 300);
+      }
     }
 
     function saveSettings() {
@@ -3971,6 +4007,41 @@
       downloadBackup();
     }
 
+    function applyImportedBackup(imported) {
+      if (imported.materials) db.materials = imported.materials;
+      if (imported.items) db.items = imported.items;
+      if (imported.sales) db.sales = imported.sales;
+      if (imported.expenses) db.expenses = imported.expenses;
+      if (imported.employees) db.employees = imported.employees;
+      if (imported.payroll) db.payroll = imported.payroll;
+      if (imported.purchases) db.purchases = imported.purchases;
+      if (imported.invoices) db.invoices = imported.invoices;
+      if (imported.cashboxes) db.cashboxes = imported.cashboxes;
+      if (imported.cashTransactions) db.cashTransactions = imported.cashTransactions;
+      if (imported.customers) db.customers = imported.customers;
+      if (imported.staffConsumption) db.staffConsumption = imported.staffConsumption;
+      if (imported.settings) db.settings = imported.settings;
+      if (!db.settings.shopName) db.settings.shopName = db.settings.shopName || '';
+      document.getElementById('setShopName').value = db.settings.shopName || '';
+      document.getElementById('setShopPhone').value = db.settings.shopPhone || '';
+      document.getElementById('setShopNumber').value = db.settings.shopNumber || '';
+      document.getElementById('setGoogleClientId').value = db.settings.googleClientId || '';
+      cancelEditMaterial();
+      cancelEditItem();
+      cancelEditInvoice();
+      cancelEditExpense();
+      cancelEditEmployee();
+      cancelEditPayroll();
+      cancelEditPurchase();
+      cancelEditCashbox();
+      cancelEditCustomer();
+      cancelEditStaffConsumption();
+      saveData();
+      applyTabOrder();
+      render();
+      initGoogleAuth();
+    }
+
     function importBackup(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -3979,36 +4050,7 @@
         try {
           const imported = JSON.parse(e.target.result);
           if (!confirm('بازیابی این فایل، اطلاعات فعلی رو جایگزین می‌کند؟')) return;
-          if (imported.materials) db.materials = imported.materials;
-          if (imported.items) db.items = imported.items;
-          if (imported.sales) db.sales = imported.sales;
-          if (imported.expenses) db.expenses = imported.expenses;
-          if (imported.employees) db.employees = imported.employees;
-          if (imported.payroll) db.payroll = imported.payroll;
-          if (imported.purchases) db.purchases = imported.purchases;
-          if (imported.invoices) db.invoices = imported.invoices;
-          if (imported.cashboxes) db.cashboxes = imported.cashboxes;
-          if (imported.cashTransactions) db.cashTransactions = imported.cashTransactions;
-          if (imported.customers) db.customers = imported.customers;
-          if (imported.staffConsumption) db.staffConsumption = imported.staffConsumption;
-          if (imported.settings) db.settings = imported.settings;
-          if (!db.settings.shopName) db.settings.shopName = db.settings.shopName || '';
-          document.getElementById('setShopName').value = db.settings.shopName || '';
-          document.getElementById('setShopPhone').value = db.settings.shopPhone || '';
-          document.getElementById('setShopNumber').value = db.settings.shopNumber || '';
-          cancelEditMaterial();
-          cancelEditItem();
-          cancelEditInvoice();
-          cancelEditExpense();
-          cancelEditEmployee();
-          cancelEditPayroll();
-          cancelEditPurchase();
-          cancelEditCashbox();
-          cancelEditCustomer();
-          cancelEditStaffConsumption();
-          saveData();
-          applyTabOrder();
-          render();
+          applyImportedBackup(imported);
           alert('✅ اطلاعات بازیابی شدند!');
         } catch (err) {
           alert('❌ فایل معتبر نیست');
@@ -4016,6 +4058,178 @@
       };
       reader.readAsText(file);
       event.target.value = '';
+    }
+
+    // ===== Google Sign-In & Drive Sync =====
+    const DRIVE_BACKUP_FILENAME = 'hesab-cafe-data.json';
+    const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email';
+    let googleTokenClient = null;
+    let googleAccessToken = null;
+    let googleUserEmail = null;
+
+    function saveGoogleClientId() {
+      const val = document.getElementById('setGoogleClientId').value.trim();
+      db.settings.googleClientId = val;
+      saveData();
+      googleAccessToken = null;
+      googleUserEmail = null;
+      initGoogleAuth();
+    }
+
+    function initGoogleAuth() {
+      const clientId = (db.settings.googleClientId || '').trim();
+      const statusEl = document.getElementById('googleAuthStatus');
+      if (!clientId) {
+        googleTokenClient = null;
+        if (statusEl) statusEl.textContent = 'Client ID را وارد و ذخیره کن.';
+        updateGoogleButtonsState();
+        return;
+      }
+      if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+        if (statusEl) statusEl.textContent = '⏳ در حال بارگذاری سرویس ورود گوگل... (اگه بعد از چند ثانیه تغییری ندید، اتصال اینترنت رو چک کن)';
+        return;
+      }
+      try {
+        googleTokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: GOOGLE_DRIVE_SCOPE,
+          callback: onGoogleTokenResponse
+        });
+        if (statusEl) statusEl.textContent = 'وارد نشده‌ای.';
+      } catch (e) {
+        console.error('Google init error:', e);
+        if (statusEl) statusEl.textContent = '❌ Client ID نامعتبر است یا آدرس این صفحه مجاز نشده.';
+      }
+      updateGoogleButtonsState();
+    }
+
+    async function onGoogleTokenResponse(resp) {
+      if (resp.error) {
+        console.error('Google auth error:', resp);
+        alert('❌ ورود با گوگل انجام نشد. دوباره امتحان کن.');
+        return;
+      }
+      googleAccessToken = resp.access_token;
+      try {
+        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${googleAccessToken}` }
+        });
+        if (res.ok) {
+          const info = await res.json();
+          googleUserEmail = info.email || null;
+        }
+      } catch (e) { /* non-critical */ }
+      updateGoogleButtonsState();
+    }
+
+    function signInWithGoogle() {
+      const clientId = (db.settings.googleClientId || '').trim();
+      if (!clientId) { alert('لطفا اول Client ID گوگل رو در همین بخش وارد و ذخیره کن.'); return; }
+      if (!googleTokenClient) initGoogleAuth();
+      if (!googleTokenClient) { alert('سرویس ورود گوگل هنوز آماده نیست، چند لحظه صبر کن و دوباره امتحان کن.'); return; }
+      googleTokenClient.requestAccessToken({ prompt: googleAccessToken ? '' : 'consent' });
+    }
+
+    function signOutGoogle() {
+      if (googleAccessToken && typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+        google.accounts.oauth2.revoke(googleAccessToken, () => {});
+      }
+      googleAccessToken = null;
+      googleUserEmail = null;
+      updateGoogleButtonsState();
+    }
+
+    function updateGoogleButtonsState() {
+      const statusEl = document.getElementById('googleAuthStatus');
+      const signInBtn = document.getElementById('googleSignInBtn');
+      const signOutBtn = document.getElementById('googleSignOutBtn');
+      const uploadBtn = document.getElementById('driveUploadBtn');
+      const downloadBtn = document.getElementById('driveDownloadBtn');
+      const hasClientId = !!(db.settings.googleClientId || '').trim();
+
+      if (signInBtn) signInBtn.disabled = !hasClientId;
+      if (googleAccessToken) {
+        if (statusEl) statusEl.textContent = googleUserEmail ? `✅ وارد شده با: ${googleUserEmail}` : '✅ وارد شدی';
+        if (signInBtn) signInBtn.style.display = 'none';
+        if (signOutBtn) signOutBtn.style.display = 'inline-block';
+        if (uploadBtn) uploadBtn.disabled = false;
+        if (downloadBtn) downloadBtn.disabled = false;
+      } else {
+        if (statusEl && hasClientId) statusEl.textContent = 'وارد نشده‌ای.';
+        if (signInBtn) signInBtn.style.display = 'inline-block';
+        if (signOutBtn) signOutBtn.style.display = 'none';
+        if (uploadBtn) uploadBtn.disabled = true;
+        if (downloadBtn) downloadBtn.disabled = true;
+      }
+    }
+
+    async function findDriveBackupFileId() {
+      const q = `name='${DRIVE_BACKUP_FILENAME}' and trashed=false`;
+      const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&spaces=drive&fields=files(id,name)`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${googleAccessToken}` } });
+      if (!res.ok) throw new Error('drive search failed');
+      const data = await res.json();
+      return (data.files && data.files.length > 0) ? data.files[0].id : null;
+    }
+
+    async function uploadDbToDrive() {
+      if (!googleAccessToken) { alert('ابتدا با جیمیل وارد شو.'); return; }
+      const btn = document.getElementById('driveUploadBtn');
+      if (btn) btn.disabled = true;
+      try {
+        const content = JSON.stringify(db, null, 2);
+        const fileId = await findDriveBackupFileId();
+        if (fileId) {
+          const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+            method: 'PATCH',
+            headers: { Authorization: `Bearer ${googleAccessToken}`, 'Content-Type': 'application/json' },
+            body: content
+          });
+          if (!res.ok) throw new Error('drive update failed');
+        } else {
+          const boundary = 'hesabcafeBoundary' + Date.now();
+          const metadata = { name: DRIVE_BACKUP_FILENAME, mimeType: 'application/json' };
+          const multipartBody =
+            `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n` +
+            `--${boundary}\r\nContent-Type: application/json\r\n\r\n${content}\r\n` +
+            `--${boundary}--`;
+          const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${googleAccessToken}`, 'Content-Type': `multipart/related; boundary=${boundary}` },
+            body: multipartBody
+          });
+          if (!res.ok) throw new Error('drive create failed');
+        }
+        alert('✅ اطلاعات با موفقیت در گوگل درایو ذخیره شد.');
+      } catch (e) {
+        console.error('Drive upload error:', e);
+        alert('❌ آپلود در درایو با خطا مواجه شد. دوباره امتحان کن.');
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function downloadDbFromDrive() {
+      if (!googleAccessToken) { alert('ابتدا با جیمیل وارد شو.'); return; }
+      const btn = document.getElementById('driveDownloadBtn');
+      if (btn) btn.disabled = true;
+      try {
+        const fileId = await findDriveBackupFileId();
+        if (!fileId) { alert('هیچ بکاپی روی گوگل درایو این حساب پیدا نشد.'); return; }
+        const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+          headers: { Authorization: `Bearer ${googleAccessToken}` }
+        });
+        if (!res.ok) throw new Error('drive download failed');
+        const imported = await res.json();
+        if (!confirm('دریافت اطلاعات از درایو، اطلاعات فعلی این دستگاه رو جایگزین می‌کند. ادامه می‌دی؟')) return;
+        applyImportedBackup(imported);
+        alert('✅ اطلاعات از گوگل درایو دریافت شد!');
+      } catch (e) {
+        console.error('Drive download error:', e);
+        alert('❌ دریافت اطلاعات از درایو با خطا مواجه شد.');
+      } finally {
+        if (btn) btn.disabled = false;
+      }
     }
 
     // Init
